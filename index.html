@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>草草行程小幫手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root {
+    --green: #0B6B43; --green-soft: #E6F4EC; --orange: #9A3412; --orange-soft: #FFF4E8;
+    --red: #B42318; --text: #1F2328; --sub: #4A5560; --line: #E3E6EA; --border: #C9CFD6;
+    --bg: #F4F6F8; --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Noto Sans TC', system-ui, sans-serif; -webkit-text-size-adjust: 100%; }
+  button, input, textarea { font-family: inherit; font-size: 16px; color: var(--text); }
+  button { cursor: pointer; }
+
+  .top { position: sticky; top: 0; z-index: 5; height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .top h1 { margin: 0; font-size: 17px; font-weight: 700; }
+  .icon-btn { width: 44px; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+
+  main { padding: 16px; display: flex; flex-direction: column; gap: 14px; max-width: 560px; margin: 0 auto; padding-bottom: 110px; }
+  .card { background: var(--card); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .card-title { font-size: 15px; font-weight: 700; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 700; color: #3C4650; }
+  .input { height: 46px; border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; background: #fff; width: 100%; min-width: 0; }
+  .input:focus, textarea:focus { outline: 2px solid var(--green); outline-offset: -1px; border-color: var(--green); }
+  textarea { min-height: 72px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; resize: vertical; width: 100%; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+  .items { display: flex; flex-direction: column; gap: 8px; }
+  .item { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 10px; padding: 0 4px 0 12px; min-height: 46px; }
+  .item span { flex: 1; font-size: 15px; word-break: break-word; padding: 10px 0; }
+  .add-row { display: flex; gap: 8px; }
+  .add-row .input { border-style: dashed; border-color: var(--green); }
+  .plus { width: 46px; height: 46px; flex-shrink: 0; border: 0; border-radius: 10px; background: var(--green); display: flex; align-items: center; justify-content: center; }
+  .empty { font-size: 14px; color: var(--sub); }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
+  .switch-row .t { font-size: 15px; }
+  .switch-row .s { font-size: 13px; color: var(--sub); }
+  .switch { position: relative; width: 52px; height: 32px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .switch .track { position: absolute; inset: 0; border-radius: 16px; background: #B8C0C8; transition: background .15s; pointer-events: none; }
+  .switch .knob { position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .15s; pointer-events: none; }
+  .switch input:checked ~ .track { background: var(--green); }
+  .switch input:checked ~ .knob { transform: translateX(20px); }
+  .switch input:focus-visible ~ .track { outline: 2px solid var(--text); outline-offset: 2px; }
+  .divider { height: 1px; background: var(--line); }
+
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); }
+  .bottom-inner { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+  .primary { width: 100%; height: 52px; border: 0; border-radius: 12px; background: var(--green); color: #fff; font-size: 17px; font-weight: 700; }
+  .primary:disabled { opacity: .55; }
+  .danger-link { height: 44px; border: 0; background: transparent; color: var(--red); font-size: 15px; font-weight: 500; }
+
+  .tabs { position: sticky; top: 56px; z-index: 4; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+  .tab { height: 46px; border: 0; border-bottom: 3px solid transparent; background: transparent; font-size: 15px; color: var(--sub); }
+  .tab[aria-selected="true"] { border-bottom-color: var(--green); color: var(--green); font-weight: 700; }
+  .day-label { font-size: 13px; font-weight: 700; color: #3C4650; margin-top: 4px; }
+  .appt { width: 100%; text-align: left; border: 0; background: var(--card); border-radius: 14px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; }
+  .appt .time { width: 56px; flex-shrink: 0; font-size: 18px; font-weight: 700; color: var(--green); }
+  .appt .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .appt .name { font-size: 16px; font-weight: 700; }
+  .appt .tasks { font-size: 13px; color: #3C4650; }
+  .badge { align-self: flex-start; margin-top: 4px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .badge.ok { background: var(--green-soft); color: var(--green); }
+  .badge.warn { background: var(--orange-soft); color: var(--orange); }
+
+  .check-item { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 4px; border-radius: 10px; }
+  .check-item input { width: 24px; height: 24px; accent-color: var(--green); flex-shrink: 0; }
+  .check-item label { flex: 1; font-size: 16px; padding: 10px 0; }
+  .check-item.done label { color: var(--sub); text-decoration: line-through; }
+  .progress { font-size: 13px; font-weight: 700; color: var(--orange); }
+  .progress.all { color: var(--green); }
+
+  .center { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px; }
+  .center .big { font-size: 20px; font-weight: 700; }
+  .center .small { font-size: 14px; color: var(--sub); line-height: 1.6; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--text); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div id="root"><div class="center"><div class="spinner" aria-hidden="true"></div><div class="small">載入中…</div></div></div>
+
+<script>
+// ====== 部署前請填入這兩個值（見 README.md）======
+const LIFF_ID = 'YOUR_LIFF_ID';
+const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
+// ====== 要和後端 Code.gs 設定相同 ======
+const DAY_BEFORE_HOUR = 20;
+const HOURS_BEFORE = 3;
+const UPCOMING_DAYS = 7;
+
+const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+const ICON = {
+  close: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2328" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  remove: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A5560" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  plus: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F2328" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>'
+};
+
+let idToken = '';
+const root = document.getElementById('root');
+
+// ---------- 小工具 ----------
+function el(tag, props, ...children) {
+  const n = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (v == null || v === false) return;
+    if (k === 'class') n.className = v;
+    else if (k === 'html') n.innerHTML = v;            // 只用在固定的圖示
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (k in n && typeof v !== 'string') n[k] = v;
+    else n.setAttribute(k, v === true ? '' : v);
+  });
+  children.flat().forEach(c => { if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(String(c))); });
+  return n;
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function toDate(date, time) { const [y, m, d] = date.split('-').map(Number); const [hh, mm] = (time || '00:00').split(':').map(Number); return new Date(y, m - 1, d, hh, mm); }
+function mdw(dateStr) { const d = toDate(dateStr); return (d.getMonth() + 1) + '/' + d.getDate() + '（' + WEEK[d.getDay()] + '）'; }
+function fmtFull(d) { return mdw(ymd(d)) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function dayRemind(date, time) { const at = toDate(date, time); const p = new Date(at.getTime() - 86400000); return new Date(p.getFullYear(), p.getMonth(), p.getDate(), DAY_BEFORE_HOUR, 0); }
+function h3Remind(date, time) { return new Date(toDate(date, time).getTime() - HOURS_BEFORE * 3600000); }
+function params() { return new URLSearchParams(location.search); }
+function go(q) { location.href = location.pathname + '?' + new URLSearchParams(q).toString(); }
+
+function toast(msg) {
+  const t = el('div', { class: 'toast', role: 'status' }, msg);
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+async function api(action, data) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // 避免跨網域預檢
+    body: JSON.stringify(Object.assign({ action, idToken }, data || {}))
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || '發生錯誤');
+  return json.data;
+}
+
+function closeBtn() {
+  return el('button', { class: 'icon-btn', 'aria-label': '關閉', html: ICON.close, onclick: () => liff.isInClient() ? liff.closeWindow() : history.back() });
+}
+function topBar(title, left) {
+  return el('div', { class: 'top' }, el('div', { style: 'display:flex;align-items:center;gap:4px' }, left || null, el('h1', {}, title)), closeBtn());
+}
+function screen(...nodes) { root.replaceChildren(...nodes); window.scrollTo(0, 0); }
+function message(big, small) {
+  screen(el('div', { class: 'center' }, el('div', { class: 'big' }, big), small ? el('div', { class: 'small' }, small) : null,
+    el('button', { class: 'primary', style: 'max-width:240px', onclick: () => liff.isInClient() ? liff.closeWindow() : go({ mode: 'list' }) }, liff.isInClient() ? '關閉' : '查看行程列表')));
+}
+
+// ---------- 新增 / 編輯表單 ----------
+function renderForm(existing) {
+  const isEdit = !!existing;
+  const s = existing ? JSON.parse(JSON.stringify(existing)) : { client: '', date: '', time: '', tasks: [], docs: [], memo: '', remindDay: true, remind3h: true };
+
+  const client = el('input', { id: 'client', class: 'input', type: 'text', maxlength: '40', placeholder: '例如：王小姐', value: s.client, autocomplete: 'off' });
+  const date = el('input', { id: 'date', class: 'input', type: 'date', value: s.date });
+  const time = el('input', { id: 'time', class: 'input', type: 'time', value: s.time, step: '300' });
+  const memo = el('textarea', { id: 'memo', maxlength: '500', placeholder: '例如：客戶希望約在公司樓下咖啡廳' });
+  memo.value = s.memo || '';
+
+  function listEditor(key, inputId, label, placeholder) {
+    const box = el('div', { class: 'items' });
+    const input = el('input', { id: inputId, class: 'input', type: 'text', maxlength: '100', placeholder, enterkeyhint: 'enter', autocomplete: 'off' });
+    function draw() {
+      box.replaceChildren(...(s[key].length ? s[key].map((v, i) => el('div', { class: 'item' },
+        el('span', {}, key === 'docs' ? v.name : v),
+        el('button', { class: 'icon-btn', 'aria-label': '移除「' + (key === 'docs' ? v.name : v) + '」', html: ICON.remove, onclick: () => { s[key].splice(i, 1); draw(); } })
+      )) : [el('div', { class: 'empty' }, '尚未新增')]));
+    }
+    function add() {
+      const v = input.value.trim();
+      if (!v) { input.focus(); return; }
+      s[key].push(key === 'docs' ? { name: v, done: false } : v);
+      input.value = '';
+      draw();
+      input.focus();
+    }
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); add(); } });
+    draw();
+    return { node: el('div', { class: 'items' }, box, el('div', { class: 'add-row' },
+      el('label', { for: inputId, class: 'sr-only' }, label), input,
+      el('button', { class: 'plus', type: 'button', 'aria-label': '新增' + label, html: ICON.plus, onclick: add }))), commit: add, input };
+  }
+  const tasks = listEditor('tasks', 'newTask', '辦理事項', '輸入辦理事項，例如：受益人變更');
+  const docs = listEditor('docs', 'newDoc', '需準備文件', '輸入文件名稱，例如：印章');
+
+  function switchRow(key, title, calc) {
+    const sub = el('div', { class: 's' });
+    const cb = el('input', { type: 'checkbox', role: 'switch', 'aria-label': title, checked: !!s[key], onchange: e => { s[key] = e.target.checked; } });
+    return { node: el('div', { class: 'switch-row' }, el('div', {}, el('div', { class: 't' }, title), sub),
+      el('div', { class: 'switch' }, cb, el('span', { class: 'track' }), el('span', { class: 'knob' }))), update() {
+        if (!date.value || !time.value) { sub.textContent = '選好日期與時間後顯示'; return; }
+        const t = calc(date.value, time.value);
+        sub.textContent = fmtFull(t) + ' 推播' + (t <= new Date() ? '（時間已過，不會推播）' : '');
+      } };
+  }
+  const r1 = switchRow('remindDay', '前一天提醒', dayRemind);
+  const r2 = switchRow('remind3h', '當天 ' + HOURS_BEFORE + ' 小時前提醒', h3Remind);
+  const refresh = () => { r1.update(); r2.update(); };
+  date.addEventListener('change', refresh); time.addEventListener('change', refresh);
+  refresh();
+
+  const saveBtn = el('button', { class: 'primary', onclick: save }, isEdit ? '儲存變更' : '儲存行程');
+  async function save() {
+    // 輸入框裡打了字但忘了按「＋」，也一起加進去
+    if (tasks.input.value.trim()) tasks.commit();
+    if (docs.input.value.trim()) docs.commit();
+    s.client = client.value.trim(); s.date = date.value; s.time = time.value; s.memo = memo.value.trim();
+    if (!s.client) { toast('請填寫客戶姓名'); client.focus(); return; }
+    if (!s.date) { toast('請選擇日期'); date.focus(); return; }
+    if (!s.time) { toast('請選擇時間'); time.focus(); return; }
+    saveBtn.disabled = true; saveBtn.textContent = '儲存中…';
+    try {
+      const saved = await api('save', { appt: Object.assign({}, s, { id: isEdit ? existing.id : undefined }) });
+      const msg = '✅ 已' + (isEdit ? '更新' : '儲存') + '行程：' + saved.client + ' ' + mdw(saved.date) + ' ' + saved.time + '\n#' + saved.id;
+      if (liff.isInClient()) {
+        try { await liff.sendMessages([{ type: 'text', text: msg }]); liff.closeWindow(); return; } catch (e) { /* 不在聊天室開啟時會失敗，改顯示完成畫面 */ }
+      }
+      message(isEdit ? '已更新行程 ✓' : '已儲存行程 ✓', saved.client + '　' + mdw(saved.date) + ' ' + saved.time);
+    } catch (e) {
+      toast(e.message); saveBtn.disabled = false; saveBtn.textContent = isEdit ? '儲存變更' : '儲存行程';
+    }
+  }
+
+  const bottomChildren = [saveBtn];
+  if (isEdit) bottomChildren.push(el('button', { class: 'danger-link', onclick: async () => {
+    if (!confirm('確定要刪除「' + existing.client + '」這筆行程嗎？')) return;
+    try { await api('delete', { id: existing.id }); message('已刪除行程', existing.client + '　' + mdw(existing.date) + ' ' + existing.time); }
+    catch (e) { toast(e.message); }
+  } }, '刪除這筆行程'));
+
+  screen(
+    topBar(isEdit ? '編輯行程' : '新增客戶行程'),
+    el('main', {},
+      el('div', { class: 'card' },
+        el('div', { class: 'field' }, el('label', { for: 'client' }, '客戶姓名'), client),
+        el('div', { class: 'grid2' },
+          el('div', { class: 'field' }, el('label', { for: 'date' }, '日期'), date),
+          el('div', { class: 'field' }, el('label', { for: 'time' }, '時間'), time))),
+      el('div', { class: 'card' }, el('div', { class: 'card-title' }, '辦理事項'), tasks.node),
+      el('div', { class: 'card' }, el('div', { class: 'card-title' }, '需準備文件'), docs.node),
+      el('div', { class: 'card' }, el('div', { class: 'card-title' }, '提醒設定'), r1.node, el('div', { class: 'divider' }), r2.node),
+      el('div', { class: 'card' }, el('label', { for: 'memo', class: 'card-title' }, '其他備註（選填）'), memo)
+    ),
+    el('div', { class: 'bottom' }, el('div', { class: 'bottom-inner' }, bottomChildren))
+  );
+}
+
+// ---------- 文件打勾 ----------
+function renderCheck(a) {
+  const progress = el('div', { class: 'progress' });
+  const list = el('div', { class: 'items' });
+  let saving = Promise.resolve();
+
+  function draw() {
+    const done = a.docs.filter(d => d.done).length;
+    progress.textContent = a.docs.length ? (done === a.docs.length ? '✓ 全部備齊' : '已備 ' + done + ' / ' + a.docs.length) : '';
+    progress.className = 'progress' + (a.docs.length && done === a.docs.length ? ' all' : '');
+    list.replaceChildren(...(a.docs.length ? a.docs.map((d, i) => {
+      const id = 'doc' + i;
+      return el('div', { class: 'check-item' + (d.done ? ' done' : '') },
+        el('input', { id, type: 'checkbox', checked: d.done, onchange: e => { d.done = e.target.checked; draw(); persist(); } }),
+        el('label', { for: id }, d.name));
+    }) : [el('div', { class: 'empty' }, '這筆行程沒有填寫需準備文件')]));
+  }
+  function persist() {
+    const snapshot = a.docs.map(d => ({ name: d.name, done: d.done }));
+    saving = saving.then(() => api('setDocs', { id: a.id, docs: snapshot })).catch(e => toast(e.message));
+  }
+  draw();
+
+  screen(
+    topBar('文件清單'),
+    el('main', {},
+      el('div', { class: 'card' },
+        el('div', { style: 'font-size:20px;font-weight:700' }, a.client),
+        el('div', { style: 'font-size:14px;color:#3C4650' }, mdw(a.date) + ' ' + a.time),
+        a.tasks.length ? el('div', { style: 'font-size:14px;line-height:1.7' }, a.tasks.map(t => el('div', {}, '• ' + t))) : null),
+      el('div', { class: 'card' },
+        el('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, el('div', { class: 'card-title' }, '需準備文件'), progress),
+        list)
+    ),
+    el('div', { class: 'bottom' }, el('div', { class: 'bottom-inner' },
+      el('button', { class: 'primary', onclick: () => { a.docs.forEach(d => { d.done = true; }); draw(); persist(); toast('文件全部備齊 👍'); } }, '全部打勾'),
+      el('button', { class: 'danger-link', style: 'color:#0B6B43', onclick: () => go({ mode: 'edit', id: a.id }) }, '編輯這筆行程')))
+  );
+}
+
+// ---------- 行程列表 ----------
+function renderList(all) {
+  let tab = sessionStorageGet('tab') || 'week';
+  const content = el('main', {});
+  const tabs = [['week', '本週'], ['month', '本月'], ['done', '已完成']];
+  const tabBar = el('div', { class: 'tabs', role: 'tablist' });
+
+  function draw() {
+    tabBar.replaceChildren(...tabs.map(([k, label]) => el('button', { class: 'tab', role: 'tab', 'aria-selected': String(tab === k), onclick: () => { tab = k; sessionStorageSet('tab', k); draw(); } }, label)));
+    const now = Date.now();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let list;
+    if (tab === 'week') list = all.filter(a => a.at >= now - 3600000 && a.at <= now + UPCOMING_DAYS * 86400000);
+    else if (tab === 'month') { const m = ymd(new Date()).slice(0, 7); list = all.filter(a => a.date.slice(0, 7) === m && a.at >= today.getTime()); }
+    else list = all.filter(a => a.at < now - 3600000);
+    list.sort((x, y) => tab === 'done' ? y.at - x.at : x.at - y.at);
+
+    if (!list.length) { content.replaceChildren(el('div', { class: 'center', style: 'min-height:40vh' }, el('div', { class: 'small' }, tab === 'done' ? '還沒有已完成的行程' : '這段期間沒有約訪行程 ☕'))); return; }
+    const groups = [];
+    list.forEach(a => { const g = groups[groups.length - 1]; if (g && g.date === a.date) g.items.push(a); else groups.push({ date: a.date, items: [a] }); });
+    content.replaceChildren(...groups.map(g => el('div', { style: 'display:flex;flex-direction:column;gap:8px' },
+      el('div', { class: 'day-label' }, mdw(g.date)),
+      g.items.map(a => {
+        const done = a.docs.filter(d => d.done).length;
+        return el('button', { class: 'appt', onclick: () => go({ mode: 'edit', id: a.id }) },
+          el('div', { class: 'time' }, a.time),
+          el('div', { class: 'info' },
+            el('div', { class: 'name' }, a.client),
+            el('div', { class: 'tasks' }, a.tasks.length ? a.tasks.join('、') : '（未填寫辦理事項）'),
+            a.docs.length ? el('span', { class: 'badge ' + (done === a.docs.length ? 'ok' : 'warn') }, done === a.docs.length ? '文件 ' + done + ' / ' + a.docs.length + ' 已備齊' : '文件 ' + done + ' / ' + a.docs.length + ' 已備') : null));
+      }))));
+  }
+  draw();
+  screen(
+    el('div', { class: 'top' }, el('h1', {}, '我的行程'),
+      el('div', { style: 'display:flex' },
+        el('button', { class: 'icon-btn', 'aria-label': '新增行程', html: ICON.plus.replace('#FFFFFF', '#0B6B43'), onclick: () => go({ mode: 'new' }) }),
+        closeBtn())),
+    tabBar, content);
+}
+function sessionStorageGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+function sessionStorageSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+
+// ---------- 啟動 ----------
+async function main() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    idToken = liff.getIDToken();
+    const p = params();
+    const mode = p.get('mode') || 'new';
+    const id = p.get('id');
+    if (mode === 'list') renderList(await api('list'));
+    else if (mode === 'edit' && id) renderForm(await api('get', { id }));
+    else if (mode === 'check' && id) renderCheck(await api('get', { id }));
+    else renderForm(null);
+  } catch (e) {
+    screen(el('div', { class: 'center' }, el('div', { class: 'big' }, '無法開啟'), el('div', { class: 'small' }, e.message || String(e))));
+  }
+}
+main();
+</script>
+</body>
+</html>
